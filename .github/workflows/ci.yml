@@ -1,0 +1,34 @@
+name: CI
+
+# Tags run the same gate as branches — a release must never ship code the
+# suite hasn't seen (pack.yml and sign-firefox.yml gate themselves on top).
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+      # Pinned rather than installed from the manifest: the suite needs no runtime
+      # dependencies, so there is no lockfile to install from.
+      - name: Lint + format (Biome)
+        run: npx --yes @biomejs/biome@2.5.5 ci .
+      - name: Syntax check
+        run: |
+          for f in rules.js sw.js popup.js; do
+            node --check "$f"
+          done
+      - name: Manifest is valid JSON
+        run: node --input-type=module -e 'import fs from "node:fs"; JSON.parse(fs.readFileSync("manifest.json", "utf8"));'
+      - name: Tests
+        run: node --test

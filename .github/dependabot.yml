@@ -1,7 +1,18 @@
 version: 2
 
-# Only the workflow actions are tracked: this repository ships no package manifest.
 updates:
+  # The manifest carries the test/lint toolchain only — the extension itself ships no
+  # runtime dependencies.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '04:00'
+    groups:
+      dev-dependencies:
+        dependency-type: development
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
