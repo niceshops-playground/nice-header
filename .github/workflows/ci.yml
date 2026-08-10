@@ -1,7 +1,10 @@
 name: CI
 
-# Tags run the same gate as branches — a release must never ship code the
-# suite hasn't seen (pack.yml and sign-firefox.yml gate themselves on top).
+# A release must never ship code the suite hasn't seen. For the automated path that
+# is release.yml's job: it waits for this workflow's own run on main to go green
+# before it tags anything. The `tags` trigger below covers the hand-pushed case —
+# and only that case, because a tag release.yml pushes with GITHUB_TOKEN cannot
+# start a workflow run at all.
 on:
   push:
     branches: [main]

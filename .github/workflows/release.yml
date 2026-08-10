@@ -1,0 +1,83 @@
+name: Release
+
+# Tags a release whenever the manifest version on main has no tag yet, then packs
+# and signs it. Bumping manifest.json is the whole release ritual; nobody pushes a
+# tag by hand any more.
+#
+# Why this gates on a CI *run* rather than on the push: main is protected and `test`
+# is required, but a squash merge produces a new commit that no run has seen. Waiting
+# for CI's own run on main keeps the promise ci.yml makes at the top of the file —
+# a release never ships code the suite has not seen.
+#
+# Why the trigger is not `push: paths: [manifest.json]`: the release condition here is
+# "the manifest version has no tag yet", which is both stronger and idempotent. A
+# manifest edit that leaves the version alone releases nothing, and a re-run of this
+# workflow tags nothing the second time.
+#
+# Why pack and sign are *called* rather than left to fire on the new tag: a tag pushed
+# with GITHUB_TOKEN does not start new workflow runs — GitHub's recursion guard drops
+# the event silently. Chaining on `push: tags` would look right and never run. Calling
+# them keeps everything inside this one run, where the guard does not apply.
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      released: ${{ steps.tag.outputs.released }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The commit CI actually went green on, not whatever main points at now.
+          ref: ${{ github.event.workflow_run.head_sha }}
+          # Tags are the lookup table for "is this version already released", so the
+          # shallow default clone is not enough.
+          fetch-depth: 0
+
+      - name: Tag the manifest version if it is new
+        id: tag
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          version=$(node -p "require('./manifest.json').version")
+          tag="v$version"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "::notice::$tag already exists — no version bump to release"
+            echo "released=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git tag "$tag" "$HEAD_SHA"
+          git push origin "$tag"
+          echo "::notice::tagged $tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "released=true" >> "$GITHUB_OUTPUT"
+
+  pack:
+    needs: tag
+    if: needs.tag.outputs.released == 'true'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/pack.yml
+    with:
+      tag: ${{ needs.tag.outputs.tag }}
+
+  sign:
+    needs: tag
+    if: needs.tag.outputs.released == 'true'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/sign-firefox.yml
+    with:
+      tag: ${{ needs.tag.outputs.tag }}
+    secrets: inherit

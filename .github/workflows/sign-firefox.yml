@@ -12,7 +12,9 @@ name: Sign Firefox add-on
 #        AMO_JWT_ISSUER  = the "JWT issuer" (API key, starts with "user:")
 #        AMO_JWT_SECRET  = the "JWT secret"
 #
-# Then either push a tag vX.Y.Z (matching manifest.json) or run this manually.
+# Normally release.yml calls this after it tags a manifest bump. The `push: tags` and
+# `workflow_dispatch` triggers stay for tags pushed by hand and for re-signing a
+# release whose AMO call failed.
 
 on:
   push:
@@ -22,6 +24,12 @@ on:
       tag:
         description: "Release tag to attach the signed .xpi to (e.g. v1.1.0)"
         required: true
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag to sign from and attach the signed .xpi to"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -31,6 +39,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # When called, the caller's ref is main — sign the tag it just made.
+          ref: ${{ inputs.tag || github.ref }}
 
       - uses: actions/setup-node@v7
         with:

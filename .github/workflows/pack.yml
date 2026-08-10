@@ -1,9 +1,17 @@
 name: Pack extension
 
+# release.yml calls this with a tag; the `push: tags` trigger stays for tags pushed
+# by hand. Both paths end up at the same `inputs.tag || github.ref_name`.
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag to build from and attach the zip to (e.g. v1.1.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -13,6 +21,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # When called, the caller's ref is main — build from the tag it just made.
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Read version from manifest
         id: manifest
@@ -31,7 +42,10 @@ jobs:
           path: nice-header-v${{ steps.manifest.outputs.version }}.zip
 
       - name: Attach to release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: inputs.tag || startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
+          # Explicit because a called run sits on refs/heads/main, where the action
+          # has no tag to infer.
+          tag_name: ${{ inputs.tag || github.ref_name }}
           files: nice-header-v${{ steps.manifest.outputs.version }}.zip
