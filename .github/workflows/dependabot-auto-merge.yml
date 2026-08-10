@@ -5,10 +5,11 @@ name: Dependabot auto-merge
 # This workflow could not exist before CI did: with nothing running on pull requests there
 # was no green to wait for.
 #
-# The green check happens here rather than in GitHub's auto-merge, because auto-merge only
-# waits for *required* status checks — and main carries no branch protection, so there is
-# nothing marked required and `--auto` would merge immediately. Gating on
-# `workflow_run.conclusion` is therefore the only thing keeping a red bump out of main.
+# The green check happens here rather than in GitHub's auto-merge. main does require the
+# `test` check now, so `gh pr merge --auto` would work — but this shape is kept on purpose:
+# it gates on `workflow_run.conclusion` itself, so it stays correct even if the required
+# check is ever renamed or dropped. With `--auto`, losing that check silently turns the
+# workflow into an unconditional merge.
 #
 # Consequence worth knowing: only the workflows listed below are covered. If another
 # pull-request-triggered workflow is ever added here, add it to `workflows:` too, otherwise
