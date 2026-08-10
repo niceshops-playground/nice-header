@@ -1,4 +1,11 @@
-import { loadState, saveState, fetchCatalog, normalizeCatalog, mergeCatalog, newSource } from "./rules.js";
+import {
+  fetchCatalog,
+  loadState,
+  mergeCatalog,
+  newSource,
+  normalizeCatalog,
+  saveState
+} from "./rules.js";
 
 const api = globalThis.browser ?? globalThis.chrome;
 
@@ -43,7 +50,9 @@ async function persist() {
 }
 
 function allEntries() {
-  return state.sources.flatMap((s) => (s.catalog ?? []).map((h, i) => ({ ...h, sourceId: s.id, i })));
+  return state.sources.flatMap((s) =>
+    (s.catalog ?? []).map((h, i) => ({ ...h, sourceId: s.id, i }))
+  );
 }
 
 function makeDeleteButton(title, onDelete) {
@@ -106,7 +115,7 @@ function openFilePicker(sourceId) {
 
 function setStatus(text, kind) {
   els.status.textContent = text || "";
-  els.status.className = "status" + (kind ? " " + kind : "");
+  els.status.className = `status${kind ? ` ${kind}` : ""}`;
 }
 
 function syncTime(iso) {
@@ -179,7 +188,7 @@ function renderSources() {
     if (s.kind === "file") {
       const label = document.createElement("span");
       label.className = "name mono";
-      label.textContent = "📄 " + (s.fileName || "(no file)");
+      label.textContent = `📄 ${s.fileName || "(no file)"}`;
       main.append(label);
 
       const reimport = document.createElement("button");
@@ -225,7 +234,7 @@ function renderCatalog() {
     if (q && !h.name.toLowerCase().includes(q)) return;
     const source = state.sources.find((s) => s.id === h.sourceId);
     const li = document.createElement("li");
-    li.className = "row" + (h.active ? "" : " off");
+    li.className = `row${h.active ? "" : " off"}`;
 
     const toggle = document.createElement("label");
     toggle.className = "switch";
@@ -256,7 +265,11 @@ function renderCatalog() {
       kv.append(origin);
     }
 
-    li.append(toggle, kv, makeDeleteButton("Remove", () => source.catalog.splice(h.i, 1)));
+    li.append(
+      toggle,
+      kv,
+      makeDeleteButton("Remove", () => source.catalog.splice(h.i, 1))
+    );
     els.catalogList.append(li);
   });
 }
@@ -275,7 +288,7 @@ function renderManual() {
 
   state.headers.forEach((h, i) => {
     const li = document.createElement("li");
-    li.className = "row" + (h.enabled ? "" : " off");
+    li.className = `row${h.enabled ? "" : " off"}`;
 
     const toggle = document.createElement("label");
     toggle.className = "switch";
@@ -300,7 +313,11 @@ function renderManual() {
     });
     kv.append(name, val);
 
-    li.append(toggle, kv, makeDeleteButton("Remove", () => state.headers.splice(i, 1)));
+    li.append(
+      toggle,
+      kv,
+      makeDeleteButton("Remove", () => state.headers.splice(i, 1))
+    );
     els.list.append(li);
   });
 }
@@ -343,12 +360,12 @@ wireInfo(els.endpointInfo, els.endpointHelp);
 
 /* ---------- events ---------- */
 
-els.tabs.forEach((t) =>
+els.tabs.forEach((t) => {
   t.addEventListener("click", () => {
     state.activeTab = t.dataset.tab;
     persist();
-  })
-);
+  });
+});
 
 els.master.addEventListener("change", () => {
   state.masterEnabled = els.master.checked;
@@ -360,7 +377,7 @@ els.urlRegex.addEventListener("input", () => {
   try {
     new RegExp(value);
   } catch (err) {
-    els.urlRegexErr.textContent = "Invalid regex: " + err.message;
+    els.urlRegexErr.textContent = `Invalid regex: ${err.message}`;
     els.urlRegexErr.classList.remove("hidden");
     els.urlRegex.classList.add("bad");
     return; // don't persist a broken pattern — DNR would reject the whole rule
@@ -431,6 +448,9 @@ els.form.addEventListener("submit", (e) => {
   }
   render();
   if (IN_TAB) {
-    setStatus("Opened as a tab — Firefox can't show the file dialog from the popup. Pick your file here.", "");
+    setStatus(
+      "Opened as a tab — Firefox can't show the file dialog from the popup. Pick your file here.",
+      ""
+    );
   }
 })();

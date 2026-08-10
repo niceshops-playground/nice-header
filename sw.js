@@ -1,4 +1,4 @@
-import { loadState, applyRules, STORAGE_KEY } from "./rules.js";
+import { applyRules, loadState, STORAGE_KEY } from "./rules.js";
 
 // Firefox exposes the promise-based WebExtension APIs on `browser`; Chrome (121+)
 // exposes the same promise API on `chrome`. `browser ?? chrome` picks the

@@ -8,7 +8,7 @@ export const STORAGE_KEY = "niceHeaderState";
 const DEFAULT_URL_REGEX = ".*";
 
 function newId() {
-  return "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  return `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 }
 
 export function newSource(kind) {
