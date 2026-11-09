@@ -1,0 +1,9 @@
+{
+  "name": "Nice Header",
+  "description": "Chrome-Erweiterung: HTTP-Header pro Request setzen",
+  "category": "Entwicklung",
+  "type": "extension",
+  "icon": "🧩",
+  "owner": "@dmetzner",
+  "tags": ["chrome", "header", "dev"]
+}
